@@ -1,0 +1,70 @@
+name: Chromebook RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  secure-chromebook-rdp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3600
+    steps:
+      - name: Configure Chromebook RDP Settings
+        run: |
+          # Enable Remote Desktop on Chromebook
+          sudo apt-get update
+          sudo apt-get install -y xfce4 xfce4-goodies tightvncserver
+          sudo apt-get install -y xrdp
+
+          # Configure xrdp
+          sudo sed -i 's/port=3389/port=3389/g' /etc/xrdp/xrdp.ini
+
+          # Restart xrdp service
+          sudo service xrdp restart
+
+      - name: Create RDP User with Secure Password
+        run: |
+          # Buat password acak
+          password=$(openssl rand -base64 12)
+
+          # Buat user baru
+          sudo useradd -m chromebook
+          echo "chromebook:$password" | sudo chpasswd
+
+          # Simpan kredensial RDP
+          echo "RDP_CREDS=User: chromebook | Password: $password" >> $GITHUB_ENV
+
+      - name: Install Tailscale
+        run: |
+          curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/focal.gpg | sudo apt-key add -
+          sudo add-apt-repository "deb https:                                              
+          sudo apt-get update
+          sudo apt-get install -y tailscale
+
+      - name: Establish Tailscale Connection
+        run: |
+                                                                                   
+          sudo tailscale up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$GITHUB_RUN_ID
+
+                                              
+          tsIP=$(sudo tailscale ip -4)
+          echo "TAILSCALE_IP=$tsIP" >> $GITHUB_ENV
+
+      - name: Verify RDP Accessibility
+        run: |
+                                                                            
+          nc -z $TAILSCALE_IP 3389
+          if [ $? -eq 0 ]; then
+            echo "TCP connection to RDP port 3389 successful"
+          else
+            echo "TCP connection to RDP port 3389 failed"
+            exit 1
+          fi
+
+      - name: Maintain Connection
+        run: |
+                                                                         
+          while true; do
+            echo "[$(date)] RDP Active - Use Ctrl+C in workflow to terminate"
+            sleep 300
+          done
+}
