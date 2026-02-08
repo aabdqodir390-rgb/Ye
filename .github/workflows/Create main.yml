@@ -1,0 +1,61 @@
+name: RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  secure-rdp:
+    runs-on: macos-latest
+    timeout-minutes: 3600
+
+    steps:
+      - name: Placeholder for macOS RDP Setup
+        run: |
+          echo "Setting up RDP on macOS is different from Windows."
+          echo "You'll need to install an RDP server (e.g., xRDP) and configure it."
+          echo "This script provides a starting point, but requires macOS-specific commands."
+          echo "Please refer to macOS RDP setup guides for detailed instructions."
+
+          # Example: Install xRDP (This may require additional configuration)
+          # brew install xrdp
+
+          # Example: Start xRDP (This may require additional configuration)
+          # sudo /usr/local/sbin/xrdp
+
+      - name: Create User (Placeholder)
+        run: |
+          echo "Creating a user on macOS requires different commands."
+          echo "This is a placeholder, you'll need to adapt it for macOS."
+
+          # Example: Create a user (Adapt this for your needs)
+          # sudo dscl . -create /Users/rdpuser
+          # sudo dscl . -create /Users/rdpuser UserShell /bin/bash
+          # sudo dscl . -create /Users/rdpuser RealName "RDP User"
+          # sudo dscl . -create /Users/rdpuser PrimaryGroupID 20
+          # sudo dscl . -passwd /Users/rdpuser <password>
+          # sudo dscl . -append /Groups/admin GroupMembership rdpuser
+
+      - name: Install Tailscale
+        run: |
+          brew install tailscale
+          sudo tailscale up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$GITHUB_RUN_ID
+
+      - name: Get Tailscale IP
+        id: tailscale_ip
+        run: |
+          TS_IP=$(tailscale ip -4)
+          echo "::set-output name=ip::$TS_IP"
+
+      - name: Display Connection Information
+        run: |
+          echo "RDP is not directly accessible on macOS. You need a VNC client."
+          echo "However, you can use Tailscale to securely access the macOS runner."
+          echo "Tailscale IP: ${{ steps.tailscale_ip.outputs.ip }}"
+          echo "Remember to configure a VNC server on the macOS runner and connect to it via the Tailscale IP."
+
+      - name: Keep Runner Alive
+        run: |
+          while true; do
+            echo "Keeping runner alive..."
+            sleep 60
+          done
